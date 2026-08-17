@@ -12,6 +12,8 @@ opcuaRoutes.post('/disconnect', opcuaController.disconnect);
 
 //Browse tree route for the OPC UA server
 opcuaRoutes.post('/browse', opcuaController.browseTree);
+opcuaRoutes.post('/read', opcuaController.readNode);
+
 
 
 

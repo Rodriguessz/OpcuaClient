@@ -1,4 +1,4 @@
-import { OPCUAClient, ClientSession, AttributeIds, SecurityPolicy, MessageSecurityMode, AddressSpace, BrowseResult } from 'node-opcua';
+import { OPCUAClient, ClientSession,SecurityPolicy, MessageSecurityMode, AddressSpace, BrowseResult, DataValue, AttributeIds } from 'node-opcua';
 import { ConnectionConfig } from '../config/connection';
 
 export class OpcuaService {
@@ -7,19 +7,12 @@ export class OpcuaService {
     isConnected: boolean = false;
 
     constructor() {
-        this.client = OPCUAClient.create({
-            endpointMustExist: false,
-            connectionStrategy: ConnectionConfig.connectionStrategy,
-            securityPolicy: SecurityPolicy.None,
-            securityMode: MessageSecurityMode.None,
-            applicationName: 'MyOpcuaClient',
-            keepSessionAlive: true,
-
-        });
+        this.client = OPCUAClient.create(ConnectionConfig);
     }
 
     //Method to connect to the OPCUA server and create a session.
     async connect(endpointUrl: string): Promise<Object> {
+
         try {
             //Open the connection with the OPCUA server.
             await this.client.connect(endpointUrl);
@@ -55,14 +48,24 @@ export class OpcuaService {
     }
 
     async browseTree(treeName: string): Promise<BrowseResult> {
-        console.log('Browsing tree:', treeName);
 
-        if (!this.isConnected || !this.session) {
-            throw new Error('Not connected to OPC UA server or session is not established.');
-        }
-
+        if (!this.isConnected || !this.session) throw new Error('Not connected to OPC UA server or session is not established.');
+    
         const browseResult = await this.session.browse(treeName);
         return browseResult
+    }
+
+    async readNode(nodeId: string): Promise<DataValue> {
+        
+        if (!this.isConnected || !this.session) throw new Error('Not connected to OPC UA server or session is not established.');
+       
+        const node = await this.session.read({
+            nodeId: nodeId,
+            attributeId: AttributeIds.Value
+        })
+
+        return node;
+
     }
 
 }
