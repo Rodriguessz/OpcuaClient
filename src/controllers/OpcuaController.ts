@@ -12,29 +12,51 @@ export class OpcuaController {
         const { endpointUrl, servername } = req.body;
 
         const session = await this.opcuaService.connect(endpointUrl);
-        
-        res.status(200).json({...session, servername});
-    } 
 
+        res.status(200).json({ ...session, servername });
+    }
 
     disconnect = async (req: any, res: any) => {
         await this.opcuaService.disconnect();
         res.status(200).json({ message: 'Desconectado do servidor OPC UA' });
     }
 
-    browseTree = async (req: any, res: any) => {
-        const { treeName } = req.body;
+    mapFolder = async (req: any, res: any) => {
+        const { folderNodeId } = req.body;
 
-        const browseResult = await this.opcuaService.browseTree(treeName);
-        
-        res.status(200).json(browseResult);
+        if (!folderNodeId) {
+            throw new Error('O parâmetro folderNodeId é obrigatório no body.');
+        }
+
+        if (!this.opcuaService.isConnected) {
+            throw new Error('Sessão OPC UA não estabelecida. Conecte-se primeiro.');
+        }
+
+        // Como usamos Express 5, não precisa de try/catch
+        const variables = await this.opcuaService.mapVariables(folderNodeId);
+
+        return res.status(200).json({
+            rootFolder: folderNodeId,
+            totalVariables: variables.length,
+            variables: variables
+        });
     }
 
-    readNode = async (req: any, res: any) => {
-        const { nodeId } = req.body;
+    search = async (req: any, res: any) => {
+    const { query } = req.body; // Ex: "BM5"
 
-        const dataValue = await this.opcuaService.readNode(nodeId);
-
-        res.status(200).json(dataValue);
+    if (!query) {
+        throw new Error('O parâmetro query é obrigatório.');
     }
+
+    // Chama a busca na memória (não tem await porque é síncrono e instantâneo)
+    const resultados = this.opcuaService.searchNodes(query);
+
+    return res.status(200).json({
+        termoBuscado: query,
+        totalEncontrado: resultados.length,
+        resultados: resultados
+    });
+}
+
 }
